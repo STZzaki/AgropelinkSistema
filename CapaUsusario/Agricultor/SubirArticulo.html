@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subir Artículo - AgropeLink</title>
+    <!-- Enlace a Font Awesome para los íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZ6fW+Nn4P2Jz7j4+Wz/z+r1/2e45N3J+J+A3Uo6lA5u0xY/1x5u6u6/9t8t5g/A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <style>
+        /* Estilos globales */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            /* Degradado de fondo usando los colores del logo */
+            background: linear-gradient(135deg, #53ad57 0%, #29b69b 100%); /* Verde Oliva a Verde Esmeralda */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            width: 1000px;
+            max-width: 95%;
+            height: auto; /* Altura auto para formularios largos */
+            min-height: 650px;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-section {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Alinear arriba para formulario largo */
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-direction: column;
+        }
+
+        .logo img {
+            width: 150px; /* Tamaño del logo ajustado */
+            height: auto;
+            margin-bottom: 5px;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: #894514; /* Color marrón del logo */
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .welcome-text {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .welcome-text h1 {
+            font-size: 26px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .welcome-text p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-with-icon i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+            font-size: 14px;
+            pointer-events: none; /* Asegura que el ícono no bloquee el input */
+        }
+
+        .input-with-icon input, .input-with-icon select, .input-with-icon textarea {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        /* Ajuste para el campo de subida de archivos (que no usa el padding del icono) */
+        .input-with-icon input[type="file"] {
+            padding-left: 12px;
+        }
+        
+        .input-with-icon textarea {
+            resize: vertical;
+            min-height: 100px;
+            padding: 12px; /* Las áreas de texto no necesitan el padding del icono */
+        }
+
+        .input-with-icon input:focus, .input-with-icon select:focus, .input-with-icon textarea:focus {
+            border-color: #53ad57;
+            box-shadow: 0 0 0 3px rgba(83, 173, 87, 0.1);
+            outline: none;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 5px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+        }
+
+        .radio-option input {
+            margin-right: 8px;
+        }
+
+        .radio-option label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        .submit-btn {
+            background: #29b69b; /* Verde esmeralda del logo */
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(41, 182, 155, 0.3);
+        }
+
+        .submit-btn:hover {
+            background: #53ad57; /* Verde oliva del logo */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(41, 182, 155, 0.4);
+        }
+
+        .back-link {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .back-link a {
+            color: #894514; /* Marrón del logo */
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link a:hover {
+            color: #53ad57;
+            text-decoration: underline;
+        }
+
+        .image-section {
+            flex: 1;
+            /* Degradado de superposición con los colores del logo y una imagen de fondo (frutas/cosecha) */
+            background: linear-gradient(rgba(137, 69, 20, 0.7), rgba(41, 182, 155, 0.7)), url('https://placehold.co/1000x800/29b69b/FFFFFF?text=CAMPO+FRESCO'); /* Placeholder visual */
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: white;
+            text-align: center;
+        }
+
+        .image-section h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .image-section p {
+            font-size: 16px;
+            line-height: 1.6;
+            max-width: 350px;
+        }
+
+        .features {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+        }
+
+        .feature i {
+            font-size: 20px;
+            margin-right: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feature-text h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .feature-text p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+                min-height: 0;
+            }
+            
+            .image-section {
+                display: none;
+            }
+
+            .login-section {
+                padding: 30px 20px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <div class="login-section">
+            <div class="logo">
+                <!-- RUTA RELATIVA AL LOGO: Adaptada para estar en CapaUsuario/Agricultor/ -->
+                <img src="../../Lib/img/logo_agropelink.png" alt="AgropeLink Logo"> 
+                
+            </div>
+
+            <div class="welcome-text">
+                <h1>Subir Nuevo Artículo</h1>
+                <p>Completa los detalles de tu producto para añadirlo al catálogo.</p>
+            </div>
+
+            <!-- El formulario apunta a un hipotético procesador PHP -->
+            <form action="ProcesarArticulo.php" method="post" enctype="multipart/form-data">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nombre">Nombre del Producto</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-apple-whole"></i>
+                            <input type="text" name="nombre" id="nombre" placeholder="Ej: Manzana Fuji" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="categoria">Categoría</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-list"></i>
+                            <select name="categoria" id="categoria" required>
+                                <option value="">Selecciona una categoría</option>
+                                <option>Frutas de Hueso</option>
+                                <option>Cítricos</option>
+                                <option>Hortalizas de Hoja</option>
+                                <option>Tubérculos</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="precio">Precio por Unidad/Kg (€)</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-euro-sign"></i>
+                            <input type="number" name="precio" id="precio" step="0.01" placeholder="Ej: 1.50" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stock">Stock Disponible (Kg/Unidades)</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-boxes-stacked"></i>
+                            <input type="number" name="stock" id="stock" placeholder="Ej: 500" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion">Descripción del Producto</label>
+                    <div class="input-with-icon">
+                        <textarea name="descripcion" id="descripcion" placeholder="Describe brevemente el origen, sabor y características de tu producto."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="imagen">Subir Imagen del Producto</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-image"></i>
+                        <input type="file" name="imagen" id="imagen" accept="image/*" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-upload"></i> Subir Artículo
+                </button>
+            </form>
+
+            <div class="back-link">
+                <a href="PanelAgricultor.html">Volver al Panel de Control</a>
+            </div>
+        </div>
+        
+        <div class="image-section">
+            <h2>¡Conecta tu Cosecha!</h2>
+            <p>Añade tus productos frescos directamente a nuestra plataforma para que los clientes puedan encontrarlos de inmediato.</p>
+
+            <div class="features">
+                <div class="feature">
+                    <i class="fas fa-shield-halved"></i>
+                    <div class="feature-text">
+                        <h3>Venta Directa</h3>
+                        <p>Elimina intermediarios y maximiza tus beneficios.</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-chart-line"></i>
+                    <div class="feature-text">
+                        <h3>Mayor Visibilidad</h3>
+                        <p>Accede a miles de clientes interesados en productos locales.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
