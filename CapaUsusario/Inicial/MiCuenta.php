@@ -1,813 +1,430 @@
+<?php
+// CapaUsusario/Inicial/MiCuenta.php - Gestión de cuenta de Cliente, Agricultor y Admin
+
+session_start();
+
+// Redirigir si no hay sesión
+if (!isset($_SESSION['usuario_id'])) {
+    header('Location: ../Acceso/Login.php');
+    exit;
+}
+
+require_once "../../CapaNegocio/Usuario/Usuario.php";
+// Asegúrate de requerir otros gestores si usas las secciones 'orders' o 'addresses'
+// require_once "../../CapaNegocio/Usuario/Pedidos.php"; 
+
+$gestor = new GestorUsuarios();
+$userId = $_SESSION['usuario_id'];
+$usuario = $gestor->obtenerUsuarioPorId($userId);
+
+// Si el usuario no existe o hay un error, cerrar sesión
+if (!$usuario) {
+    session_destroy();
+    header('Location: ../Acceso/Login.php');
+    exit;
+}
+
+// Determinar la sección actual
+$current_section = $_GET['section'] ?? 'dashboard';
+
+// Lógica de acciones
+$message = null;
+
+if ($current_section === 'logout') {
+    header('Location: Logout.php');
+    exit;
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && $current_section === 'details' && isset($_POST['update_details'])) {
+    $nombre = trim($_POST['nombre']);
+    $apellidos = trim($_POST['apellidos']);
+    $correo = trim($_POST['correo']);
+    $password_new = trim($_POST['password_new']);
+    
+    // Validación simple
+    if (empty($nombre) || empty($correo)) {
+        $message = ["type" => "error", "text" => "Nombre y correo no pueden estar vacíos."];
+    } elseif ($gestor->existeUsuario($correo) && $correo !== $usuario->correo) {
+        $message = ["type" => "error", "text" => "El correo electrónico ya está registrado."];
+    } else {
+        $password_hash = null;
+        if (!empty($password_new)) {
+            // Hashing de la nueva contraseña
+            $password_hash = password_hash($password_new, PASSWORD_DEFAULT);
+        }
+
+        if ($gestor->actualizarDetalles($userId, $nombre, $apellidos, $correo, $password_hash)) {
+            $message = ["type" => "success", "text" => "Detalles actualizados con éxito."];
+            // Refrescar el objeto usuario para mostrar los nuevos datos
+            $usuario = $gestor->obtenerUsuarioPorId($userId);
+            $_SESSION['usuario_nombre'] = $usuario->nombre;
+
+        } else {
+            $message = ["type" => "error", "text" => "Error al actualizar los detalles. Inténtelo de nuevo."];
+        }
+    }
+}
+
+// Lógica de contenido de secciones (solo la estructura)
+$content = "";
+switch ($current_section) {
+    case 'dashboard':
+        if ($usuario->tipo === 'Admin') {
+            $content = "
+                <p><strong>Bienvenido al Panel de Administración.</strong> Utiliza el menú lateral (o el botón de abajo) para acceder a las herramientas de gestión.</p>
+                <div style='margin-top: 20px;'>
+                    <a href='../Admin/Panel.php' style='display: inline-block; padding: 10px 20px; background: #1a4d8c; color: white; text-decoration: none; border-radius: 5px;'>Ir al Panel de Administración</a>
+                </div>
+                <div style='margin-top: 30px; padding: 15px; border: 1px dashed #ccc; background: #f9f9f9;'>
+                    <h3>Información Rápida</h3>
+                    <p><strong>Rol:</strong> Administrador del Sistema</p>
+                    <p><strong>Correo:</strong> {$usuario->correo}</p>
+                </div>
+            ";
+        } elseif ($usuario->tipo === 'Agricultor') {
+            $content = "
+                <p><strong>Bienvenido, Agricultor.</strong> Desde aquí puedes gestionar tus productos y ver el estado de tus pedidos y ganancias.</p>
+                <div style='margin-top: 20px;'>
+                    <a href='../Agricultor/MisProductos.php' style='display: inline-block; padding: 10px 20px; background: #894514; color: white; text-decoration: none; border-radius: 5px; margin-right: 15px;'>
+                        <i class='fas fa-boxes'></i> Gestionar Productos
+                    </a>
+                    <a href='../Agricultor/SubirArticulo.html' style='display: inline-block; padding: 10px 20px; background: #53ad57; color: white; text-decoration: none; border-radius: 5px;'>
+                        <i class='fas fa-upload'></i> Subir Artículo
+                    </a>
+                </div>
+            ";
+        } else { // Cliente
+            $content = "
+                <p><strong>Bienvenido, Cliente.</strong> Desde tu escritorio puedes ver un resumen de tus pedidos recientes y gestionar tu información personal.</p>
+                <div style='margin-top: 20px;'>
+                    <a href='../Usuario/Catalogo.php' style='display: inline-block; padding: 10px 20px; background: #29b69b; color: white; text-decoration: none; border-radius: 5px;'>Ir al Catálogo</a>
+                </div>
+            ";
+        }
+        break;
+    
+    case 'orders':
+        // Simulación de Pedidos
+        $content = "<h2>Tus Pedidos</h2><p>Aquí se mostrará la lista de tus pedidos con su estado y detalles.</p>";
+        break;
+    
+    case 'addresses':
+        // Simulación de Direcciones
+        $content = "
+            <h2>Direcciones de Envío</h2>
+            <p>Esta es tu dirección actual registrada:</p>
+            <div class='address-box'>
+                <p><strong>{$usuario->nombre} {$usuario->apellidos}</strong></p>
+                <p>{$usuario->direccion}</p>
+                <p>{$usuario->localidad}, {$usuario->provincia}</p>
+            </div>
+            <p style='margin-top: 15px;'>Puedes actualizar tu dirección en la sección 'Detalles de la cuenta'.</p>
+        ";
+        break;
+
+    case 'details':
+        // Formulario de detalles
+        $content = "
+            <h2>Detalles de la Cuenta</h2>
+            <p>Actualiza tu información personal y contraseña.</p>
+            <form method='POST' action='MiCuenta.php?section=details'>
+                <input type='hidden' name='update_details' value='1'>
+                <div class='form-group'>
+                    <label for='nombre'>Nombre</label>
+                    <input type='text' id='nombre' name='nombre' value='" . htmlspecialchars($usuario->nombre) . "' required>
+                </div>
+                <div class='form-group'>
+                    <label for='apellidos'>Apellidos</label>
+                    <input type='text' id='apellidos' name='apellidos' value='" . htmlspecialchars($usuario->apellidos) . "'>
+                </div>
+                <div class='form-group'>
+                    <label for='correo'>Correo Electrónico</label>
+                    <input type='email' id='correo' name='correo' value='" . htmlspecialchars($usuario->correo) . "' required>
+                </div>
+                <div class='form-group'>
+                    <label for='password_new'>Nueva Contraseña</label>
+                    <input type='password' id='password_new' name='password_new' placeholder='Dejar vacío para no cambiar'>
+                </div>
+                
+                <h3>Dirección de Registro</h3>
+                <div class='form-group'>
+                    <label>Provincia</label>
+                    <input type='text' value='" . htmlspecialchars($usuario->provincia) . "' disabled>
+                </div>
+                <div class='form-group'>
+                    <label>Dirección</label>
+                    <input type='text' value='" . htmlspecialchars($usuario->direccion) . "' disabled>
+                </div>
+                <p style='font-size: 0.9em; color: #777;'>Para cambiar la dirección de registro, contacta a soporte.</p>
+
+                <button type='submit' class='btn-update'>Guardar Cambios</button>
+            </form>
+        ";
+        break;
+    
+    default:
+        $content = "<h2>Error</h2><p>Sección no encontrada.</p>";
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Cuenta - Agropelink</title>
+    <title>Mi Cuenta - AgropeLink</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
         body {
-            background: linear-gradient(135deg, #53ad57 0%, #29b69b 100%);
-            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
             padding: 20px;
         }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
-        }
-
-        /* Header Styles */
-        header {
             background: white;
             border-radius: 10px;
-            padding: 15px 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            min-height: 70vh;
         }
-
-        .logo {
-            display: flex;
-            align-items: center;
+        h1 {
+            color: #894514;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
         }
-
-        .logo-icon {
-            background: #53ad57;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 15px;
-            font-size: 20px;
+        h2 {
+            color: #29b69b;
+            margin-bottom: 15px;
         }
-
-        .logo-text {
-            font-size: 24px;
-            font-weight: 700;
-            color: #53ad57;
-            letter-spacing: 1px;
-        }
-
-        nav ul {
-            display: flex;
-            list-style: none;
-        }
-
-        nav li {
-            margin-left: 20px;
-        }
-
-        nav a {
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            font-size: 15px;
-            transition: color 0.3s;
-            padding: 8px 12px;
-            border-radius: 5px;
-        }
-
-        nav a:hover {
-            color: #53ad57;
-            background: #f5f5f5;
-        }
-
-        /* Account Section Styles */
-        .account-container {
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .account-header {
-            background: #f9f9f9;
-            padding: 25px 30px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .account-header h1 {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 5px;
-        }
-
-        .account-content {
-            display: flex;
-            min-height: 500px;
-        }
-
+        
+        /* Sidebar (Menú) */
         .account-sidebar {
-            flex: 0 0 250px;
-            background: #f9f9f9;
-            padding: 20px 0;
+            width: 280px;
+            background-color: #f9f9f9;
             border-right: 1px solid #eee;
+            padding: 30px 0;
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
         }
-
         .account-sidebar ul {
             list-style: none;
+            padding: 0;
+            margin: 0;
         }
-
-        .account-sidebar li {
-            padding: 15px 25px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 15px;
-            display: flex;
-            align-items: center;
-            border-left: 3px solid transparent;
+        .account-sidebar ul li a {
+            display: block;
+            padding: 15px 30px;
+            color: #555;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s, color 0.3s;
+            border-left: 4px solid transparent;
         }
-
-        .account-sidebar li i {
+        .account-sidebar ul li a i {
             margin-right: 10px;
             width: 20px;
             text-align: center;
-            color: #666;
         }
-
-        .account-sidebar li:hover {
-            background: #f0f0f0;
+        .account-sidebar ul li a:hover, .account-sidebar ul li.active a {
+            background-color: #e0f2f1;
+            color: #29b69b;
+            border-left: 4px solid #29b69b;
         }
-
-        .account-sidebar li.active {
-            background: white;
-            border-left-color: #53ad57;
-            color: #53ad57;
-            font-weight: 600;
+        
+        /* Contenido Principal */
+        .account-content {
+            flex-grow: 1;
+            padding: 40px;
         }
-
-        .account-sidebar li.active i {
-            color: #53ad57;
-        }
-
-        .account-main {
-            flex: 1;
-            padding: 30px;
-        }
-
-        .account-section {
-            display: none;
-        }
-
-        .account-section.active {
-            display: block;
-        }
-
-        .welcome-message {
-            margin-bottom: 25px;
-        }
-
-        .welcome-message h2 {
-            font-size: 22px;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .welcome-message p {
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 20px;
-        }
-
-        .google-login {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            background: white;
-            border: 2px solid #e1e1e1;
-            border-radius: 8px;
-            padding: 12px 20px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 20px;
-            width: 100%;
-            max-width: 300px;
-        }
-
-        .google-login:hover {
-            background: #f9f9f9;
-            border-color: #53ad57;
-        }
-
-        .google-login i {
-            color: #DB4437;
-            font-size: 18px;
-        }
-
-        /* Orders Section */
-        .orders-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        .orders-table th, .orders-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-
-        .orders-table th {
-            background: #f9f9f9;
-            font-weight: 600;
-            color: #555;
-        }
-
-        .order-status {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .status-completed {
-            background: #e6f7ee;
-            color: #0d8b5e;
-        }
-
-        .status-pending {
-            background: #fff8e6;
-            color: #d6a10e;
-        }
-
-        .status-processing {
-            background: #e6f2ff;
-            color: #2d6cdf;
-        }
-
-        /* Downloads Section */
-        .downloads-list {
-            margin-top: 20px;
-        }
-
-        .download-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            margin-bottom: 10px;
-        }
-
-        .download-info h3 {
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-
-        .download-info p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .download-btn {
-            background: #53ad57;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .download-btn:hover {
-            background: #29b69b;
-        }
-
-        /* Addresses Section */
-        .addresses-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .address-card {
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 20px;
-            position: relative;
-        }
-
-        .address-card.default {
-            border-color: #53ad57;
-            background: #f9fff9;
-        }
-
-        .address-type {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: #53ad57;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 12px;
-        }
-
-        .address-actions {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .address-btn {
-            background: none;
-            border: 1px solid #ddd;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.3s;
-        }
-
-        .address-btn.edit:hover {
-            background: #e6f2ff;
-            border-color: #2d6cdf;
-            color: #2d6cdf;
-        }
-
-        .address-btn.delete:hover {
-            background: #ffe6e6;
-            border-color: #e02d2d;
-            color: #e02d2d;
-        }
-
-        /* Payment Methods Section */
-        .payment-methods {
-            margin-top: 20px;
-        }
-
-        .payment-card {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .payment-icon {
-            width: 40px;
-            height: 40px;
-            background: #f5f5f5;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 15px;
-            font-size: 20px;
-            color: #555;
-        }
-
-        .payment-details {
-            flex: 1;
-        }
-
-        .payment-details h3 {
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-
-        .payment-details p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .payment-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        /* Account Details Section */
-        .account-form {
-            max-width: 600px;
-            margin-top: 20px;
-        }
-
+        
+        /* Formularios */
         .form-group {
             margin-bottom: 20px;
         }
-
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
             color: #555;
         }
-
         .form-group input {
             width: 100%;
-            padding: 12px 15px;
+            padding: 12px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            font-size: 15px;
+            font-size: 16px;
         }
-
-        .form-group input:focus {
-            border-color: #53ad57;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(83, 173, 87, 0.2);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 25px;
-        }
-
-        .btn-primary {
-            background: #53ad57;
+        .btn-update {
+            background: #894514;
             color: white;
             border: none;
             padding: 12px 25px;
             border-radius: 5px;
-            font-weight: 500;
+            font-size: 1em;
             cursor: pointer;
             transition: background 0.3s;
+            margin-top: 10px;
+        }
+        .btn-update:hover {
+            background: #6a3510;
         }
 
-        .btn-primary:hover {
-            background: #29b69b;
-        }
-
-        .btn-secondary {
-            background: #f5f5f5;
-            color: #333;
-            border: 1px solid #ddd;
-            padding: 12px 25px;
+        /* Mensajes de feedback */
+        .message {
+            padding: 15px;
             border-radius: 5px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-secondary:hover {
-            background: #e9e9e9;
-        }
-
-        /* Logout Section */
-        .logout-content {
-            text-align: center;
-            padding: 40px 0;
-        }
-
-        .logout-icon {
-            font-size: 60px;
-            color: #53ad57;
             margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* Estilos de caja de dirección */
+        .address-box {
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
-        .logout-content h2 {
-            font-size: 24px;
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        .logout-content p {
-            color: #666;
-            max-width: 500px;
-            margin: 0 auto 25px;
-            line-height: 1.6;
-        }
-
-        /* Responsive Styles */
         @media (max-width: 768px) {
-            header {
-                flex-direction: column;
-                padding: 15px;
-            }
-
-            .logo {
-                margin-bottom: 15px;
-            }
-
-            nav ul {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            nav li {
-                margin: 5px;
-            }
-
-            .account-content {
+            .container {
                 flex-direction: column;
             }
-
             .account-sidebar {
-                flex: 1;
+                width: 100%;
                 border-right: none;
                 border-bottom: 1px solid #eee;
+                border-top-right-radius: 10px;
+                border-bottom-left-radius: 0;
             }
-
             .account-sidebar ul {
                 display: flex;
                 overflow-x: auto;
-                padding-bottom: 10px;
-            }
-
-            .account-sidebar li {
                 white-space: nowrap;
-                border-left: none;
-                border-bottom: 3px solid transparent;
             }
-
-            .account-sidebar li.active {
-                border-left-color: transparent;
-                border-bottom-color: #53ad57;
+            .account-sidebar ul li a {
+                border-left: none;
+                border-bottom: 4px solid transparent;
+            }
+            .account-sidebar ul li.active a {
+                border-left: none;
+                border-bottom: 4px solid #29b69b;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="logo">
-                <div class="logo-icon">
-                    <i class="fas fa-leaf"></i>
-                </div>
-                <div class="logo-text">Agropelink</div>
-            </div>
-            <nav>
-                <ul>
-                    <li><a href="#">Productos</a></li>
-                    <li><a href="#">Agricultores</a></li>
-                    <li><a href="#">Verduras</a></li>
-                    <li><a href="#">Frutas</a></li>
-                    <li><a href="#">Frutos secos</a></li>
-                    <li><a href="#">Nuestra inspiración</a></li>
-                    <li><a href="#">Contacto</a></li>
-                </ul>
-            </nav>
-        </header>
-
-        <div class="account-container">
-            <div class="account-header">
-                <h1>Mi cuenta</h1>
-            </div>
-            
-            <div class="account-content">
-                <div class="account-sidebar">
-                    <ul>
-                        <li class="active" data-section="dashboard">
-                            <i class="fas fa-home"></i> Escritorio
-                        </li>
-                        <li data-section="orders">
-                            <i class="fas fa-shopping-bag"></i> Pedidos
-                        </li>
-                        <li data-section="downloads">
-                            <i class="fas fa-download"></i> Descargas
-                        </li>
-                        <li data-section="addresses">
-                            <i class="fas fa-map-marker-alt"></i> Direcciones
-                        </li>
-                        <li data-section="payments">
-                            <i class="fas fa-credit-card"></i> Métodos de pago
-                        </li>
-                        <li data-section="details">
+        
+        <div class="account-sidebar">
+            <h3 style="padding: 0 30px 10px; color: #894514; border-bottom: 1px solid #eee;">
+                Hola, <?= htmlspecialchars($usuario->nombre) ?>
+            </h3>
+            <ul>
+                <?php if ($usuario->tipo === 'Admin'): ?>
+                    <!-- Menú Específico para Administrador -->
+                    <li class="<?= $current_section === 'dashboard' ? 'active' : '' ?>">
+                        <a href="../Admin/Panel.php">
+                            <i class="fas fa-home"></i> Panel de Admin
+                        </a>
+                    </li>
+                    <li class="<?= $current_section === 'details' ? 'active' : '' ?>">
+                        <a href="MiCuenta.php?section=details">
                             <i class="fas fa-user"></i> Detalles de la cuenta
-                        </li>
-                        <li data-section="logout">
+                        </a>
+                    </li>
+                    <li class="<?= $current_section === 'logout' ? 'active' : '' ?>">
+                        <a href="Logout.php">
                             <i class="fas fa-sign-out-alt"></i> Salir
-                        </li>
-                    </ul>
+                        </a>
+                    </li>
+
+                <?php elseif ($usuario->tipo === 'Agricultor'): ?>
+                    <!-- Menú para Agricultor -->
+                    <li class="<?= $current_section === 'dashboard' ? 'active' : '' ?>" >
+                        <a href="MiCuenta.php?section=dashboard">
+                            <i class="fas fa-home"></i> Escritorio
+                        </a>
+                    </li>
+                    <li class="<?= $current_section === 'my_products' ? 'active' : '' ?>">
+                        <!-- 🔑 NUEVA SECCIÓN: MIS PRODUCTOS -->
+                        <a href="../Agricultor/MisProductos.php">
+                            <i class="fas fa-boxes"></i> Mis Productos
+                        </a>
+                    </li>
+                    <li class="<?= $current_section === 'orders' ? 'active' : '' ?>">
+                        <a href="MiCuenta.php?section=orders">
+                            <i class="fas fa-shopping-bag"></i> Pedidos (Simulado)
+                        </a>
+                    </li>
+                    <li class="<?= $current_section === 'details' ? 'active' : '' ?>">
+                        <a href="MiCuenta.php?section=details">
+                            <i class="fas fa-user"></i> Detalles de la cuenta
+                        </a>
+                    </li>
+                    <li class="<?= $current_section === 'logout' ? 'active' : '' ?>">
+                        <a href="Logout.php">
+                            <i class="fas fa-sign-out-alt"></i> Salir
+                        </a>
+                    </li>
+                <?php else: ?>
+                    <!-- Menú Normal (Cliente) -->
+                    <li class="<?= $current_section === 'dashboard' ? 'active' : '' ?>" >
+                        <a href="MiCuenta.php?section=dashboard">
+                            <i class="fas fa-home"></i> Escritorio
+                        </a>
+                    </li>
+                    <li class="<?= $current_section === 'orders' ? 'active' : '' ?>">
+                        <a href="MiCuenta.php?section=orders">
+                            <i class="fas fa-shopping-bag"></i> Pedidos
+                        </a>
+                    </li>
+                    <li class="<?= $current_section === 'addresses' ? 'active' : '' ?>">
+                        <a href="MiCuenta.php?section=addresses">
+                            <i class="fas fa-map-marker-alt"></i> Direcciones
+                        </a>
+                    </li>
+                    <li class="<?= $current_section === 'details' ? 'active' : '' ?>">
+                        <a href="MiCuenta.php?section=details">
+                            <i class="fas fa-user"></i> Detalles de la cuenta
+                        </a>
+                    </li>
+                    <li class="<?= $current_section === 'logout' ? 'active' : '' ?>">
+                        <a href="Logout.php">
+                            <i class="fas fa-sign-out-alt"></i> Salir
+                        </a>
+                    </li>
+                <?php endif; ?>
+            </ul>
+        </div>
+        
+        <div class="account-content">
+            <h1>Mi Cuenta</h1>
+            
+            <?php if (!empty($message)): ?>
+                <div class="message <?= htmlspecialchars($message['type']) ?>">
+                    <i class="fas fa-info-circle"></i> <?= htmlspecialchars($message['text']) ?>
                 </div>
-                
-                <div class="account-main">
-                    <!-- Dashboard Section -->
-                    <div class="account-section active" id="dashboard">
-                        <div class="welcome-message">
-                            <h2>Hola <strong>usuario</strong> (¿no eres <strong>usuario</strong>? <a href="#" style="color: #53ad57; text-decoration: none;">Cerrar sesión</a>)</h2>
-                            <p>Desde el escritorio de tu cuenta puedes ver tus pedidos recientes, gestionar tus direcciones de envío y facturación y editar tu contraseña y los detalles de tu cuenta.</p>
-                        </div>
-                        
-                        <button class="google-login">
-                            <i class="fab fa-google"></i>
-                            Iniciar sesión con Google
-                        </button>
-                    </div>
-                    
-                    <!-- Orders Section -->
-                    <div class="account-section" id="orders">
-                        <h2>Pedidos</h2>
-                        <p>Aquí puedes ver tu historial de pedidos y su estado actual.</p>
-                        
-                        <table class="orders-table">
-                            <thead>
-                                <tr>
-                                    <th>Pedido</th>
-                                    <th>Fecha</th>
-                                    <th>Estado</th>
-                                    <th>Total</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>#12345</td>
-                                    <td>15 Oct 2025</td>
-                                    <td><span class="order-status status-completed">Completado</span></td>
-                                    <td>€45.90</td>
-                                    <td><a href="#" style="color: #53ad57;">Ver</a></td>
-                                </tr>
-                                <tr>
-                                    <td>#12344</td>
-                                    <td>10 Oct 2025</td>
-                                    <td><span class="order-status status-processing">Procesando</span></td>
-                                    <td>€32.50</td>
-                                    <td><a href="#" style="color: #53ad57;">Ver</a></td>
-                                </tr>
-                                <tr>
-                                    <td>#12343</td>
-                                    <td>5 Oct 2025</td>
-                                    <td><span class="order-status status-pending">Pendiente</span></td>
-                                    <td>€67.80</td>
-                                    <td><a href="#" style="color: #53ad57;">Ver</a></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Downloads Section -->
-                    <div class="account-section" id="downloads">
-                        <h2>Descargas</h2>
-                        <p>Tus productos digitales disponibles para descargar.</p>
-                        
-                        <div class="downloads-list">
-                            <div class="download-item">
-                                <div class="download-info">
-                                    <h3>Guía de Cultivo Sostenible</h3>
-                                    <p>Descargado por última vez: 12 Oct 2025</p>
-                                </div>
-                                <button class="download-btn">Descargar</button>
-                            </div>
-                            <div class="download-item">
-                                <div class="download-info">
-                                    <h3>Catálogo de Productos Orgánicos</h3>
-                                    <p>Descargado por última vez: 5 Oct 2025</p>
-                                </div>
-                                <button class="download-btn">Descargar</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Addresses Section -->
-                    <div class="account-section" id="addresses">
-                        <h2>Direcciones</h2>
-                        <p>Gestiona tus direcciones de envío y facturación.</p>
-                        
-                        <div class="addresses-container">
-                            <div class="address-card default">
-                                <span class="address-type">Principal</span>
-                                <h3>Dirección de Envío</h3>
-                                <p>Usuario Ejemplo</p>
-                                <p>Calle Principal, 123</p>
-                                <p>28001 Madrid, España</p>
-                                <div class="address-actions">
-                                    <button class="address-btn edit">Editar</button>
-                                    <button class="address-btn delete">Eliminar</button>
-                                </div>
-                            </div>
-                            <div class="address-card">
-                                <h3>Dirección de Facturación</h3>
-                                <p>Usuario Ejemplo</p>
-                                <p>Avenida Secundaria, 456</p>
-                                <p>28002 Madrid, España</p>
-                                <div class="address-actions">
-                                    <button class="address-btn edit">Editar</button>
-                                    <button class="address-btn delete">Eliminar</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Payment Methods Section -->
-                    <div class="account-section" id="payments">
-                        <h2>Métodos de Pago</h2>
-                        <p>Gestiona tus métodos de pago guardados.</p>
-                        
-                        <div class="payment-methods">
-                            <div class="payment-card">
-                                <div class="payment-icon">
-                                    <i class="fab fa-cc-visa"></i>
-                                </div>
-                                <div class="payment-details">
-                                    <h3>Visa terminada en 4321</h3>
-                                    <p>Expira: 12/2026</p>
-                                </div>
-                                <div class="payment-actions">
-                                    <button class="address-btn edit">Editar</button>
-                                    <button class="address-btn delete">Eliminar</button>
-                                </div>
-                            </div>
-                            <div class="payment-card">
-                                <div class="payment-icon">
-                                    <i class="fab fa-cc-paypal"></i>
-                                </div>
-                                <div class="payment-details">
-                                    <h3>PayPal</h3>
-                                    <p>usuario@ejemplo.com</p>
-                                </div>
-                                <div class="payment-actions">
-                                    <button class="address-btn edit">Editar</button>
-                                    <button class="address-btn delete">Eliminar</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Account Details Section -->
-                    <div class="account-section" id="details">
-                        <h2>Detalles de la Cuenta</h2>
-                        <p>Edita la información de tu cuenta y cambia tu contraseña.</p>
-                        
-                        <form class="account-form">
-                            <div class="form-group">
-                                <label for="name">Nombre</label>
-                                <input type="text" id="name" value="Usuario">
-                            </div>
-                            <div class="form-group">
-                                <label for="lastname">Apellidos</label>
-                                <input type="text" id="lastname" value="Ejemplo">
-                            </div>
-                            <div class="form-group">
-                                <label for="email">Correo electrónico</label>
-                                <input type="email" id="email" value="usuario@ejemplo.com">
-                            </div>
-                            <div class="form-group">
-                                <label for="password">Contraseña actual (dejar en blanco para no cambiar)</label>
-                                <input type="password" id="password">
-                            </div>
-                            <div class="form-group">
-                                <label for="new-password">Nueva contraseña (dejar en blanco para no cambiar)</label>
-                                <input type="password" id="new-password">
-                            </div>
-                            <div class="form-actions">
-                                <button type="button" class="btn-primary">Guardar cambios</button>
-                                <button type="button" class="btn-secondary">Cancelar</button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <!-- Logout Section -->
-                    <div class="account-section" id="logout">
-                        <div class="logout-content">
-                            <div class="logout-icon">
-                                <i class="fas fa-sign-out-alt"></i>
-                            </div>
-                            <h2>¿Estás seguro de que quieres cerrar sesión?</h2>
-                            <p>Serás redirigido a la página de inicio de sesión. Podrás volver a acceder a tu cuenta en cualquier momento.</p>
-                            <div class="form-actions">
-                                <button type="button" class="btn-primary">Cerrar sesión</button>
-                                <button type="button" class="btn-secondary">Cancelar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <?php endif; ?>
+
+            <div class="section-content">
+                <?= $content ?>
             </div>
         </div>
+        
     </div>
-
-    <script>
-        // Navigation functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const menuItems = document.querySelectorAll('.account-sidebar li');
-            const sections = document.querySelectorAll('.account-section');
-            
-            menuItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    // Remove active class from all items
-                    menuItems.forEach(i => i.classList.remove('active'));
-                    // Add active class to clicked item
-                    this.classList.add('active');
-                    
-                    // Hide all sections
-                    sections.forEach(section => section.classList.remove('active'));
-                    
-                    // Show the selected section
-                    const sectionId = this.getAttribute('data-section');
-                    document.getElementById(sectionId).classList.add('active');
-                });
-            });
-        });
-    </script>
 </body>
 </html>

@@ -1,9 +1,11 @@
 <?php
+// CapaUsusario/Acceso/Login.php
+
 // ¡Necesario para guardar el estado del usuario!
-session_start();
+session_start(); //
 
 // RUTA CORREGIDA: Sube dos niveles y baja a CapaNegocio
-require_once "../../CapaNegocio/Usuario/Usuario.php"; 
+require_once "../../CapaNegocio/Usuario/Usuario.php"; //
 
 // Inicializamos la variable de error como cadena vacía
 $error_message = ""; 
@@ -14,20 +16,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $gestor = new GestorUsuarios();
     // La función verificarLogin usa password_verify() internamente
-    $usuario = $gestor->verificarLogin($correo, $contrasena); 
+    $usuario = $gestor->verificarLogin($correo, $contrasena); //
 
     if ($usuario) {
         // ÉXITO: Guardar datos en la sesión
-        $_SESSION['usuario_correo'] = $usuario->correo;
-        $_SESSION['usuario_tipo'] = $usuario->tipo;
+        $_SESSION['usuario_correo'] = $usuario->correo; //
+        $_SESSION['usuario_tipo'] = $usuario->tipo; //
+        $_SESSION['usuario_id'] = $usuario->id; // <-- ¡NUEVA LÍNEA CLAVE PARA SQL!
         
         if ($usuario->tipo == 'Agricultor') {
             // RUTA CORREGIDA: Sube uno a CapaUsuario y baja a Agricultor
-            header('Location: ../Agricultor/SubirArticulo.html'); 
+            header('Location: ../Inicial/MiCuenta.php'); //
             exit;
         } else {
             // RUTA CORREGIDA: Sube uno a CapaUsuario y baja a Usuario (Cliente)
-            header('Location: ../Usuario/Catalogo.php'); 
+            header('Location: ../Usuario/Catalogo.php'); //
             exit;
         }
     } else {
@@ -44,7 +47,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acceso - AgropeLink</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- RUTA CORREGIDA al CSS: Sube dos niveles y baja a Lib/Estilos -->
     <link rel="stylesheet" href="../../Lib/Estilos/estilos.css">
     
     <style>
@@ -54,7 +56,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .container { display: flex; width: 1000px; max-width: 95%; height: 650px; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); }
         .login-section { flex: 1; padding: 40px; display: flex; flex-direction: column; justify-content: center; overflow-y: auto; }
         .logo { display: flex; align-items: center; margin-bottom: 25px; flex-direction: column; }
-        /* RUTA CORREGIDA a la imagen del logo */
         .logo img { width: 150px; height: auto; margin-bottom: 5px; } 
         .logo-text { font-size: 24px; font-weight: 700; color: #894514; letter-spacing: 1px; text-align: center; }
         .welcome-text { margin-bottom: 25px; text-align: center; }
@@ -87,7 +88,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         <div class="login-section">
             <div class="logo">
-                <!-- RUTA CORREGIDA a la imagen del logo -->
                 <img src="../../Lib/img/logo_agropelink.png" alt="AgropeLink Logo" onerror="this.onerror=null;this.src='https://placehold.co/150x50/894514/ffffff?text=Logo'">
             </div>
 
@@ -97,7 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             
             <?php 
-            // 🔑 CORRECCIÓN: Muestra el error solo si $error_message NO está vacío
+            // Muestra el error solo si $error_message NO está vacío
             if (!empty($error_message)): 
             ?>
                 <div class="error-message">
@@ -144,8 +144,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="image-section">
             <h2>¡Frescura Garantizada!</h2>
             <p>Descubre productos frescos, directos del campo a tu mesa, con la calidad que solo AgropeLink te puede ofrecer.</p>
-
-            <!-- Se requiere agregar estilos para .features y .feature en el <style> -->
         </div>
     </div>
 </body>

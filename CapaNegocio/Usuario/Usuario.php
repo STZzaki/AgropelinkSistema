@@ -1,16 +1,28 @@
 <?php
-// Clase principal que representa a un usuario
+// CapaNegocio/Usuario/Usuario.php
+
+// Incluir el archivo de conexión. 
+// RUTA CORREGIDA: Subir un nivel (Usuario/) y luego ir a la carpeta Acceso/
+require_once __DIR__ . "/../Acceso/Conexion.php"; 
+
+/**
+ * Clase Usuario
+ * Representa a un usuario en el sistema AgropeLink.
+ */
 class Usuario {
+    public $id; 
     public $nombre;
     public $apellidos;
     public $provincia;
     public $localidad;
     public $direccion;
-    public $tipo;
+    public $tipo; // 'Cliente', 'Agricultor', 'Admin'
     public $correo;
     public $contrasena; // Contiene el HASH de la contraseña
 
-    public function __construct($nombre, $apellidos, $provincia, $localidad, $direccion, $tipo, $correo, $contrasena) {
+    // CONSTRUCTOR CON 9 ARGUMENTOS (ID incluido). 
+    public function __construct($id, $nombre, $apellidos, $provincia, $localidad, $direccion, $tipo, $correo, $contrasena) {
+        $this->id = $id; 
         $this->nombre = $nombre;
         $this->apellidos = $apellidos;
         $this->provincia = $provincia;
@@ -20,93 +32,189 @@ class Usuario {
         $this->correo = $correo;
         $this->contrasena = $contrasena;
     }
-
-    // Método para generar la fila HTML (para guardar en usuarios_data.html)
-    public function toRow() {
-        // Aseguramos que la fila se guarde de forma compacta para evitar problemas de lectura con RegEx
-        return "<tr>" .
-            "<td>{$this->nombre}</td>" .
-            "<td>{$this->apellidos}</td>" .
-            "<td>{$this->provincia}</td>" .
-            "<td>{$this->localidad}</td>" .
-            "<td>{$this->direccion}</td>" .
-            "<td>{$this->tipo}</td>" .
-            "<td>{$this->correo}</td>" .
-            "<td>{$this->contrasena}</td>" . // Guardamos el HASH
-            "</tr>\n";
-    }
 }
 
-// Clase para manejar las operaciones de guardar y cargar usuarios
+/**
+ * Clase GestorUsuarios
+ * Maneja las operaciones CRUD en la tabla 'usuarios' usando la variable global $pdo.
+ */
 class GestorUsuarios {
-    // RUTA CORREGIDA: Usamos __DIR__ para garantizar que el archivo se encuentra 
-    // en la misma carpeta que Usuario.php (CapaNegocio/Usuario/)
-    private $archivo = __DIR__ . "/usuarios_data.html"; 
+    
+    private $pdo;
 
+    public function __construct() {
+        // 🔑 CORRECCIÓN CLAVE: Usamos la variable global $pdo
+        global $pdo; 
+        $this->pdo = $pdo;
+    }
+    
+    // Crear un nuevo usuario (Usado por el Registro)
     public function guardar(Usuario $usuario) {
-        if (!file_exists($this->archivo)) {
-            // Contenido inicial de la tabla con encabezados
-            $contenido = "<table><tr><th>Nombre</th><th>Apellidos</th><th>Provincia</th><th>Localidad</th><th>Dirección</th><th>Tipo</th><th>Correo</th><th>Contraseña</th></tr>\n";
-        } else {
-            $contenido = file_get_contents($this->archivo);
-            // Quitamos la etiqueta de cierre </table> para añadir la nueva fila
-            $contenido = preg_replace('/<\/table>/', '', $contenido); 
-        }
-
-        $contenido .= $usuario->toRow();
-        $contenido .= "</table>";
-
-        file_put_contents($this->archivo, $contenido);
+        $sql = "INSERT INTO usuarios (nombre, apellidos, provincia, localidad, direccion, tipo, correo, contrasena_hash) 
+                VALUES (:nombre, :apellidos, :provincia, :localidad, :direccion, :tipo, :correo, :contrasena_hash)";
+        
+        $stmt = $this->pdo->prepare($sql);
+        
+        $stmt->execute([
+            ':nombre' => $usuario->nombre,
+            ':apellidos' => $usuario->apellidos,
+            ':provincia' => $usuario->provincia,
+            ':localidad' => $usuario->localidad,
+            ':direccion' => $usuario->direccion,
+            ':tipo' => $usuario->tipo,
+            ':correo' => $usuario->correo,
+            ':contrasena_hash' => $usuario->contrasena
+        ]);
     }
 
-    public function cargarUsuarios() {
-        if (!file_exists($this->archivo)) {
-            return [];
-        }
+    /**
+     * Obtiene un usuario por su ID. NECESARIO para MiCuenta.php
+     */
+    public function obtenerUsuarioPorId($id) {
+        $sql = "SELECT id, nombre, apellidos, provincia, localidad, direccion, tipo, correo, contrasena_hash FROM usuarios WHERE id = :id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $contenido = file_get_contents($this->archivo);
-        // RegEx mejorada sin el modificador 's' para prevenir la captura de saltos de línea
-        $regex = '/<tr><td>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td><td>(.*?)<\/td><\/tr>/';
-        
-        preg_match_all($regex, $contenido, $filas, PREG_SET_ORDER);
-
-        $usuarios = [];
-        foreach ($filas as $f) {
-            // 🔑 CORRECCIÓN: Aplicar trim() a la contraseña (índice 8) para asegurar la limpieza del hash
-            $contrasena_limpia = trim($f[8]); 
-
-            $usuarios[] = new Usuario(
-                trim($f[1]), trim($f[2]), trim($f[3]), trim($f[4]), 
-                trim($f[5]), trim($f[6]), trim($f[7]), $contrasena_limpia
+        if ($data) {
+            // Pasamos los 9 argumentos al constructor
+            return new Usuario(
+                $data['id'], 
+                $data['nombre'], 
+                $data['apellidos'], 
+                $data['provincia'], 
+                $data['localidad'], 
+                $data['direccion'], 
+                $data['tipo'], 
+                $data['correo'], 
+                $data['contrasena_hash']
             );
         }
-        return $usuarios;
+        return null;
     }
-
-    // 🔑 CORRECCIÓN CLAVE: Verifica el login usando password_verify()
+    
+    /**
+     * Obtiene un usuario por su correo electrónico para verificar el login.
+     */
     public function verificarLogin($correo, $contrasena_ingresada) {
-        $usuarios = $this->cargarUsuarios();
-        foreach ($usuarios as $u) {
-            if ($u->correo == $correo) {
-                // Compara la contraseña plana ingresada contra el hash guardado
-                if (password_verify($contrasena_ingresada, $u->contrasena)) {
-                    return $u; // Login exitoso
-                }
-                // Correo encontrado, pero contraseña incorrecta
-                return null; 
+        $sql = "SELECT id, nombre, apellidos, provincia, localidad, direccion, tipo, correo, contrasena_hash FROM usuarios WHERE correo = :correo";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':correo' => $correo]);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($data) {
+            if (password_verify($contrasena_ingresada, $data['contrasena_hash'])) {
+                return new Usuario(
+                    $data['id'], 
+                    $data['nombre'], $data['apellidos'], $data['provincia'], $data['localidad'], 
+                    $data['direccion'], $data['tipo'], $data['correo'], $data['contrasena_hash']
+                ); 
             }
         }
-        return null; // Usuario no encontrado
+        return null;
     }
 
+    /**
+     * Verifica si un correo ya existe.
+     */
     public function existeUsuario($correo) {
-        $usuarios = $this->cargarUsuarios();
-        foreach ($usuarios as $u) {
-            if ($u->correo == $correo) {
-                return true;
-            }
+        $sql = "SELECT COUNT(*) FROM usuarios WHERE correo = :correo";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':correo' => $correo]);
+        return $stmt->fetchColumn() > 0;
+    }
+
+    /**
+     * Actualiza los detalles de la cuenta de un usuario (MiCuenta.php).
+     */
+    public function actualizarDetalles($id, $nombre, $apellidos, $correo, $password_hash = null) {
+        $sql = "UPDATE usuarios SET nombre = :nombre, apellidos = :apellidos, correo = :correo";
+        
+        if ($password_hash !== null) {
+            $sql .= ", contrasena_hash = :contrasena_hash";
         }
-        return false;
+        
+        $sql .= " WHERE id = :id";
+        
+        $stmt = $this->pdo->prepare($sql);
+        
+        $params = [
+            ':id' => $id,
+            ':nombre' => $nombre,
+            ':apellidos' => $apellidos,
+            ':correo' => $correo
+        ];
+        
+        if ($password_hash !== null) {
+            $params[':contrasena_hash'] = $password_hash;
+        }
+
+        return $stmt->execute($params);
+    }
+
+    // --- MÉTODOS AÑADIDOS PARA EL ADMINISTRADOR ---
+
+    /**
+     * Carga todos los usuarios del sistema. Usado principalmente por el Administrador.
+     */
+    public function cargarUsuarios(): array {
+        try {
+            $sql = "SELECT id, nombre, apellidos, provincia, localidad, direccion, tipo, correo, contrasena_hash FROM usuarios ORDER BY id ASC";
+            $stmt = $this->pdo->query($sql);
+            $usuarios = [];
+
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                 $usuarios[] = new Usuario(
+                    $row['id'], 
+                    $row['nombre'], 
+                    $row['apellidos'], 
+                    $row['provincia'], 
+                    $row['localidad'], 
+                    $row['direccion'], 
+                    $row['tipo'], 
+                    $row['correo'], 
+                    $row['contrasena_hash']
+                );
+            }
+
+            return $usuarios;
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Actualiza los detalles de un usuario desde el panel de administración.
+     */
+    public function actualizarUsuarioAdmin(int $id, string $nombre, string $correo, string $tipo): bool {
+        try {
+            // Nota: En la vista de administración, los apellidos no se editan.
+            $sql = "UPDATE usuarios SET nombre = :nombre, correo = :correo, tipo = :tipo WHERE id = :id";
+            $stmt = $this->pdo->prepare($sql);
+            
+            return $stmt->execute([
+                ':nombre' => $nombre,
+                ':correo' => $correo,
+                ':tipo' => $tipo,
+                ':id' => $id
+            ]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Elimina un usuario del sistema por su ID.
+     */
+    public function eliminarUsuario(int $id): bool {
+        try {
+            $sql = "DELETE FROM usuarios WHERE id = :id";
+            $stmt = $this->pdo->prepare($sql);
+            
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            return false;
+        }
     }
 }
-// El cierre ?>
+?>

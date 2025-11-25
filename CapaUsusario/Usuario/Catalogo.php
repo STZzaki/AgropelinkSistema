@@ -1,11 +1,17 @@
 <?php
 // CapaUsuario/Usuario/Catalogo.php
 
+// 1. INICIAR SESIÓN
+session_start();
+
 // Ruta ajustada: asume que Articulos.php está en CapaNegocio/Usuario/Articulos.php
 require_once "../../CapaNegocio/Usuario/Articulos.php"; 
 
 $gestor = new GestorArticulos();
-$articulos = $gestor->cargarArticulos(); // Carga los artículos de ejemplo
+$articulos = $gestor->cargarArticulos(); // Carga los artículos de la BD
+
+// 2. VERIFICAR SI EL USUARIO ESTÁ LOGUEADO
+$is_logged_in = isset($_SESSION['usuario_id']);
 
 ?>
 <!DOCTYPE html>
@@ -60,6 +66,11 @@ $articulos = $gestor->cargarArticulos(); // Carga los artículos de ejemplo
             color: #894514; 
         }
 
+        .nav-links {
+            display: flex;
+            align-items: center;
+        }
+
         .nav-links a {
             color: #53ad57;
             text-decoration: none;
@@ -77,6 +88,7 @@ $articulos = $gestor->cargarArticulos(); // Carga los artículos de ejemplo
             color: #29b69b;
             cursor: pointer;
             position: relative;
+            margin-left: 25px;
         }
 
         .cart-count {
@@ -129,6 +141,15 @@ $articulos = $gestor->cargarArticulos(); // Carga los artículos de ejemplo
             transition: transform 0.3s, box-shadow 0.3s;
             display: flex;
             flex-direction: column;
+        }
+
+        /* Contenedor del enlace para que la tarjeta sea clicable */
+        .product-link {
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
         }
 
         .product-card:hover {
@@ -192,7 +213,7 @@ $articulos = $gestor->cargarArticulos(); // Carga los artículos de ejemplo
             font-weight: 600;
         }
 
-        .add-to-cart-btn {
+        .view-detail-btn {
             background: #53ad57;
             color: white;
             border: none;
@@ -203,13 +224,16 @@ $articulos = $gestor->cargarArticulos(); // Carga los artículos de ejemplo
             cursor: pointer;
             transition: background 0.3s;
             width: 100%;
+            text-align: center;
+            text-decoration: none; /* Asegura que el botón se vea bien */
+            display: block;
         }
 
-        .add-to-cart-btn:hover {
+        .view-detail-btn:hover {
             background: #29b69b;
         }
 
-        .add-to-cart-btn i {
+        .view-detail-btn i {
             margin-right: 8px;
         }
         
@@ -220,7 +244,14 @@ $articulos = $gestor->cargarArticulos(); // Carga los artículos de ejemplo
             }
             
             .nav-links {
-                display: none; 
+                display: flex; 
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+            
+            .nav-links a {
+                margin-left: 10px;
+                margin-bottom: 5px;
             }
 
             .catalog-container {
@@ -246,16 +277,31 @@ $articulos = $gestor->cargarArticulos(); // Carga los artículos de ejemplo
         </div>
         
         <nav class="nav-links">
-            <a href="Catalogo.php">Catálogo</a>
-            <a href="#">Pedidos</a>
-            <a href="#">Mi Cuenta</a>
-            <a href="../../Acceso/Login.php">Cerrar Sesión</a>
+            <a href="Catalogo.php"><i class="fas fa-store"></i> Catálogo</a>
+            <a href="Carrito.php"><i class="fas fa-receipt"></i> Pedidos</a>
+            
+            <?php if ($is_logged_in): ?>
+                <!-- BOTÓN "MI CUENTA" y "CERRAR SESIÓN" -->
+                <a href="../Inicial/MiCuenta.php" style="font-weight: 600; color: #894514;">
+                    <i class="fas fa-user-circle"></i> Mi Cuenta
+                </a>
+                <a href="../Inicial/Logout.php">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            <?php else: ?>
+                <!-- BOTÓN "INICIAR SESIÓN" -->
+                <a href="../Acceso/Login.php" style="font-weight: 600; color: #29b69b;">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </a>
+            <?php endif; ?>
+
+            <div class="cart-icon">
+                <i class="fas fa-shopping-cart"></i>
+                <!-- Simulamos la cuenta del carrito por ahora -->
+                <span class="cart-count">0</span>
+            </div>
         </nav>
         
-        <div class="cart-icon">
-            <i class="fas fa-shopping-cart"></i>
-            <span class="cart-count">3</span>
-        </div>
     </header>
 
     <!-- CONTENIDO PRINCIPAL DEL CATÁLOGO -->
@@ -268,27 +314,39 @@ $articulos = $gestor->cargarArticulos(); // Carga los artículos de ejemplo
 
         <div class="product-grid">
             
-            <?php foreach ($articulos as $articulo): ?>
-            <div class="product-card">
-                <div class="product-image-container">
-                    <img src="<?php echo htmlspecialchars($articulo->imagen_url); ?>" alt="<?php echo htmlspecialchars($articulo->nombre); ?>" class="product-image">
+            <?php if (empty($articulos)): ?>
+                <p style="text-align: center; grid-column: 1 / -1; color: #666;">No hay artículos disponibles en el catálogo por el momento.</p>
+            <?php else: ?>
+                <?php foreach ($articulos as $articulo): ?>
+                <div class="product-card">
+                    
+                    <!-- ENLACE CLICKABLE HACIA LA PÁGINA DE DETALLE -->
+                    <a href="Producto.php?id=<?= $articulo->id ?>" class="product-link">
+                        <div class="product-image-container">
+                            <img src="<?php echo htmlspecialchars($articulo->imagen_url); ?>" 
+                                onerror="this.onerror=null; this.src='https://placehold.co/280x200/cccccc/333333?text=Sin+Imagen'" 
+                                alt="<?php echo htmlspecialchars($articulo->nombre); ?>" 
+                                class="product-image">
+                        </div>
+                        <div class="product-info">
+                            <div>
+                                <h3><?php echo htmlspecialchars($articulo->nombre); ?></h3>
+                                <p><?php echo htmlspecialchars($articulo->descripcion); ?></p>
+                            </div>
+                            <div class="price-stock">
+                                <span class="price"><?php echo number_format($articulo->precio, 2) . '€ / Kg'; ?></span>
+                                <span class="stock">Quedan <?php echo htmlspecialchars($articulo->stock); ?> Kg</span>
+                            </div>
+                        </div>
+                    </a>
+                    
+                    <!-- Botón para ir al detalle (que ahora es el enlace principal) -->
+                    <a href="Producto.php?id=<?= $articulo->id ?>" class="view-detail-btn">
+                        <i class="fas fa-search-plus"></i> Ver Detalle
+                    </a>
                 </div>
-                <div class="product-info">
-                    <div>
-                        <h3><?php echo htmlspecialchars($articulo->nombre); ?></h3>
-                        <p><?php echo htmlspecialchars($articulo->descripcion); ?></p>
-                    </div>
-                    <div class="price-stock">
-                        <span class="price"><?php echo number_format($articulo->precio, 2) . '€ / Kg'; ?></span>
-                        <span class="stock">Quedan <?php echo htmlspecialchars($articulo->stock); ?> Kg</span>
-                    </div>
-                    <!-- El botón podría enviar un formulario o AJAX para añadir al carrito -->
-                    <button class="add-to-cart-btn">
-                        <i class="fas fa-cart-plus"></i> Añadir al Carrito
-                    </button>
-                </div>
-            </div>
-            <?php endforeach; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
 
         </div>
     </main>

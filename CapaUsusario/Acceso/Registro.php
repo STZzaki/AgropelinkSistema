@@ -1,4 +1,6 @@
 <?php
+// CapaUsusario/Acceso/Registro.php
+
 // Asegúrate de iniciar la sesión si necesitas mensajes flash o redirección post-registro
 session_start();
 
@@ -29,13 +31,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $icon = "fas fa-triangle-exclamation";
     } else {
         
-        // 🔑 CORRECCIÓN CLAVE: Hashear la contraseña antes de guardarla
+        // 🔑 Hashear la contraseña antes de guardarla
         $contrasena_hasheada = password_hash($contrasena_plana, PASSWORD_DEFAULT);
         
         // 3. Guardar el nuevo usuario usando el HASH
+        // CORRECCIÓN CLAVE: Pasamos null como primer argumento (el ID)
         $usuario = new Usuario(
-            $nombre, $apellidos, $provincia, $localidad, $direccion, $tipo, 
-            $correo, $contrasena_hasheada // Guarda el HASH aquí
+            null, // <-- ID: Pasamos null porque es un nuevo registro (9 argumentos)
+            $nombre, 
+            $apellidos, 
+            $provincia, 
+            $localidad, 
+            $direccion, 
+            $tipo, 
+            $correo, 
+            $contrasena_hasheada // Guarda el HASH aquí
         );
 
         $gestor->guardar($usuario);
