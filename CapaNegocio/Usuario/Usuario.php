@@ -2,7 +2,7 @@
 // CapaNegocio/Usuario/Usuario.php
 
 // Incluir el archivo de conexión. 
-// RUTA CORREGIDA: Subir un nivel (Usuario/) y luego ir a la carpeta Acceso/
+// RUTA CRÍTICA: Subir un nivel (Usuario/) y luego ir a la carpeta Acceso/
 require_once __DIR__ . "/../Acceso/Conexion.php"; 
 
 /**
@@ -43,7 +43,7 @@ class GestorUsuarios {
     private $pdo;
 
     public function __construct() {
-        // 🔑 CORRECCIÓN CLAVE: Usamos la variable global $pdo
+        // Usamos la variable global $pdo
         global $pdo; 
         $this->pdo = $pdo;
     }
@@ -217,4 +217,3 @@ class GestorUsuarios {
         }
     }
 }
-?>

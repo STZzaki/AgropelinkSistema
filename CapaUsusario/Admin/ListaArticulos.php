@@ -50,28 +50,8 @@ $articulos = $gestorArticulos->cargarArticulos();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Artículos</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; padding: 20px; }
-        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); padding: 30px; }
-        h1 { color: #53ad57; margin-bottom: 25px; }
-        .back-link { display: inline-block; margin-bottom: 20px; color: #007bff; text-decoration: none; font-weight: 600; }
-        
-        .management-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .management-table th { background-color: #53ad57; color: white; padding: 12px 15px; text-align: left; }
-        .management-table td { padding: 10px 15px; border-bottom: 1px solid #eee; vertical-align: top; }
-        .management-table tr:nth-child(even) { background-color: #f9f9f9; }
-        
-        .item-image { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
-
-        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: opacity 0.3s; }
-        .btn-delete { background-color: #dc3545; color: white; }
-        .btn-delete:hover { opacity: 0.8; }
-        
-        .message { padding: 15px; border-radius: 5px; margin-bottom: 20px; font-weight: 600; }
-        .message.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .message.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    </style>
+    <link rel="stylesheet" href="..\..\Lib\Estilos\estilos.css">
+    
 </head>
 <body>
     <div class="container">

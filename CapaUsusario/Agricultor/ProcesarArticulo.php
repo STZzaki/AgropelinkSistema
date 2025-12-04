@@ -94,42 +94,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $is_success ? "Éxito" : "Error" ?> - AgropeLink</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <style>
-        /* Estilos básicos para mostrar el resultado */
-        body {
-            background: linear-gradient(135deg, #53ad57 0%, #29b69b 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .message-box {
-            width: 450px;
-            max-width: 90%;
-            background: white;
-            border-radius: 15px;
-            padding: 40px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            text-align: center;
-        }
-        .icon-container {
-            width: 80px; height: 80px; border-radius: 50%; display: flex;
-            justify-content: center; align-items: center; margin: 0 auto 20px;
-            font-size: 36px; border: 2px solid;
-        }
-        .success { background-color: #e6f7e6; color: #53ad57; border-color: #53ad57; }
-        .error { background-color: #ffe6e6; color: #cc0000; border-color: #cc0000; }
-        h1 { font-size: 24px; color: #333; margin-bottom: 15px; }
-        p { color: #666; margin-bottom: 30px; line-height: 1.6; }
-        .links a {
-            display: block; background: #29b69b; color: white; padding: 12px;
-            border-radius: 8px; text-decoration: none; font-weight: 600;
-            margin-bottom: 10px; transition: background 0.3s;
-        }
-        .links a:hover { background: #53ad57; }
-    </style>
+    <link rel="stylesheet" href="..\..\Lib\Estilos\estilos.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
 </head>
 <body>
     <div class="message-box">

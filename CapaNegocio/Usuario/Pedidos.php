@@ -8,7 +8,7 @@ require_once __DIR__ . "/../Acceso/Conexion.php";
 require_once __DIR__ . "/Articulos.php"; 
 
 /**
- * Clase para manejar la l¨®gica de inserci¨®n y gesti¨®n de pedidos y detalles en la BD.
+ * Clase para manejar la logica de insercion y gestiin de pedidos y detalles en la BD.
  */
 class GestorPedidos {
     

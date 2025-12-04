@@ -1,9 +1,9 @@
 <?php
 // Configuración de la base de datos
-define('DB_HOST', 'localhost'); // Cambia si tu servidor de DB no está en localhost
-define('DB_NAME', 'agropelink_db'); // Cambia al nombre real de tu base de datos
-define('DB_USER', 'root'); // **IMPORTANTE: Cambia por tu usuario**
-define('DB_PASS', ''); // **IMPORTANTE: Cambia por tu contraseña**
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'agropelink_db'); 
+define('DB_USER', 'root'); 
+define('DB_PASS', ''); 
 
 // Variable global para la conexión PDO
 $pdo = null;
@@ -20,12 +20,7 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 } catch (PDOException $e) {
-    // En caso de error de conexión, terminamos el script y mostramos el error (solo en desarrollo)
-    die("Error de conexión a la base de datos: " . $e->getMessage());
+    // 🔑 Muestra el error de conexión en la página
+    die("ERROR DE CONEXIÓN A LA BASE DE DATOS: Revise DB_USER/DB_PASS/DB_NAME. Mensaje: " . $e->getMessage());
 }
-
-// Puedes comentar o eliminar esta línea si no quieres que se imprima nada
-// echo "Conexión a la base de datos exitosa.";
-
-// La variable $pdo contiene el objeto de conexión que usaremos en GestorUsuarios.
 ?>

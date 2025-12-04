@@ -1,10 +1,10 @@
 <?php
 // CapaUsusario/Acceso/Registro.php
+// Este archivo maneja tanto la visualización del formulario como el procesamiento de datos.
 
-// Asegúrate de iniciar la sesión si necesitas mensajes flash o redirección post-registro
 session_start();
 
-// RUTA CORREGIDA: Sube dos niveles (Acceso -> CapaUsuario -> ejercicio1) y baja a CapaNegocio
+// RUTA CRÍTICA: Incluye el gestor de usuarios que a su vez llama a Conexion.php
 require_once "../../CapaNegocio/Usuario/Usuario.php";
 
 $message = "";
@@ -31,13 +31,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $icon = "fas fa-triangle-exclamation";
     } else {
         
-        // 🔑 Hashear la contraseña antes de guardarla
+        // 🔑 Hashear la contraseña antes de guardarla para seguridad
         $contrasena_hasheada = password_hash($contrasena_plana, PASSWORD_DEFAULT);
         
         // 3. Guardar el nuevo usuario usando el HASH
-        // CORRECCIÓN CLAVE: Pasamos null como primer argumento (el ID)
         $usuario = new Usuario(
-            null, // <-- ID: Pasamos null porque es un nuevo registro (9 argumentos)
+            null, // ID: null para el nuevo registro
             $nombre, 
             $apellidos, 
             $provincia, 
@@ -45,23 +44,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $direccion, 
             $tipo, 
             $correo, 
-            $contrasena_hasheada // Guarda el HASH aquí
+            $contrasena_hasheada
         );
 
-        $gestor->guardar($usuario);
-        $message = "¡Registro completado correctamente! Ya puedes iniciar sesión.";
-        $is_success = true;
-        $icon = "fas fa-circle-check";
-        
-        // Redirigir inmediatamente al login tras el éxito para evitar reenvíos
-        header('Location: Login.php');
-        exit;
+        // Si el registro es exitoso, redirigimos al login inmediatamente (evitando la caja de error/éxito)
+        if ($gestor->guardar($usuario)) {
+            header('Location: Login.php?registered=true'); // Redirigir al login
+            exit;
+        } else {
+            // Error de base de datos
+             $message = "Error: No se pudo completar el registro en la base de datos.";
+             $is_success = false;
+             $icon = "fas fa-database";
+        }
     }
-} else {
-    // Si se accede directamente, redirigir al formulario
-    header('Location: Registro.html');
-    exit;
 }
+// Si es GET (acceso directo) o si el registro POST falló, mostramos el formulario o el error.
 ?>
 
 <!DOCTYPE html>
@@ -69,67 +67,114 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= ($is_success === false) ? "Error de Registro" : "Procesando Registro" ?> - AgropeLink</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- RUTA CORREGIDA al CSS: Sube dos niveles (Acceso -> CapaUsuario -> ejercicio1) y baja a Lib/Estilos -->
+    <title>Registro - AgropeLink</title>
+    <link rel="stylesheet" href="..\..\Lib\Estilos\estilos.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- RUTA al CSS -->
     <link rel="stylesheet" href="../../Lib/Estilos/estilos.css">
     
-    <style>
-        /* Estilos específicos para la caja de mensaje */
-        body {
-            background: linear-gradient(135deg, #53ad57 0%, #29b69b 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .message-box {
-            width: 450px;
-            max-width: 90%;
-            background: white;
-            border-radius: 15px;
-            padding: 40px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            text-align: center;
-        }
-        .icon-container {
-            width: 80px; height: 80px; border-radius: 50%; display: flex;
-            justify-content: center; align-items: center; margin: 0 auto 20px;
-            font-size: 36px; border: 2px solid;
-        }
-        .error {
-            background-color: #ffe6e6; color: #cc0000; border-color: #cc0000;
-        }
-        .logo-text { font-size: 28px; font-weight: 700; color: #894514; margin-bottom: 20px; }
-        h1 { font-size: 24px; color: #333; margin-bottom: 15px; }
-        p { color: #666; margin-bottom: 30px; line-height: 1.6; }
-        .links a {
-            display: block; background: #29b69b; color: white; padding: 12px;
-            border-radius: 8px; text-decoration: none; font-weight: 600;
-            margin-bottom: 10px; transition: background 0.3s;
-        }
-        .links a:hover { background: #53ad57; }
-    </style>
+    
 </head>
 <body>
-    <?php if ($is_success === false): // Solo mostramos si hay un error ?>
-        <div class="message-box">
-            <div class="logo-text">AgropeLink</div>
-            
-            <div class="icon-container error">
-                <i class="<?= $icon ?>"></i>
-            </div>
-            
-            <h1>¡Ha Ocurrido un Error!</h1>
-            
-            <p><?= htmlspecialchars($message) ?></p>
-
-            <div class="links">
-                <a href="Registro.html">Volver al Registro</a>
-                <a href="Login.php">Ir al Inicio de Sesión</a>
-            </div>
+    <div class="container">
+        <div class="logo">
+            <!-- RUTA a la imagen del logo -->
+            <img src="../../Lib/img/logo_agropelink.png" alt="AgropeLink Logo" onerror="this.onerror=null;this.src='https://placehold.co/120x50/894514/ffffff?text=Logo'">
+            <div class="logo-text">Registro</div>
         </div>
-    <?php endif; ?>
+
+        <div class="welcome-text">
+            <h1>Crea tu Cuenta</h1>
+            <p>Únete a AgropeLink para conectar directamente con el campo.</p>
+        </div>
+        
+        <?php if (!empty($message)): ?>
+            <div class="error-message">
+                <i class="<?= $icon ?>"></i> <?= htmlspecialchars($message) ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- La acción apunta a sí mismo para el procesamiento POST -->
+        <form method="post" action="Registro.php">
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="nombre">Nombre</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="nombre" id="nombre" required value="<?= htmlspecialchars($nombre ?? '') ?>">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="apellidos">Apellidos</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-user-tag"></i>
+                        <input type="text" name="apellidos" id="apellidos" required value="<?= htmlspecialchars($apellidos ?? '') ?>">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="provincia">Provincia</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <input type="text" name="provincia" id="provincia" required value="<?= htmlspecialchars($provincia ?? '') ?>">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="localidad">Localidad</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-city"></i>
+                        <input type="text" name="localidad" id="localidad" required value="<?= htmlspecialchars($localidad ?? '') ?>">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="direccion">Dirección Completa</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-road"></i>
+                    <input type="text" name="direccion" id="direccion" required value="<?= htmlspecialchars($direccion ?? '') ?>">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="tipo">Tipo de Usuario</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-users"></i>
+                    <select name="tipo" id="tipo" required>
+                        <option value="Cliente" <?= ($tipo ?? '') == 'Cliente' ? 'selected' : '' ?>>Cliente</option>
+                        <option value="Agricultor" <?= ($tipo ?? '') == 'Agricultor' ? 'selected' : '' ?>>Agricultor</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="correo">Correo Electrónico</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="correo" id="correo" placeholder="ejemplo@correo.com" required value="<?= htmlspecialchars($correo ?? '') ?>">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="contrasena">Contraseña</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="contrasena" id="contrasena" placeholder="Mínimo 8 caracteres" required minlength="8">
+                </div>
+            </div>
+
+            <button type="submit" class="register-btn">
+                Registrarse
+            </button>
+        </form>
+
+        <div class="login-link">
+            ¿Ya tienes cuenta? <a href="Login.php">Inicia Sesión</a>
+        </div>
+    </div>
 </body>
 </html>

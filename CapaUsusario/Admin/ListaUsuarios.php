@@ -57,34 +57,8 @@ $usuarios = $gestorUsuarios->cargarUsuarios();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Usuarios</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); padding: 30px; }
-        h1 { color: #1a4d8c; margin-bottom: 25px; }
-        .back-link { display: inline-block; margin-bottom: 20px; color: #007bff; text-decoration: none; font-weight: 600; }
-        
-        .management-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .management-table th { background-color: #1a4d8c; color: white; padding: 12px 15px; text-align: left; }
-        .management-table td { padding: 10px 15px; border-bottom: 1px solid #eee; vertical-align: middle; }
-        .management-table tr:nth-child(even) { background-color: #f9f9f9; }
-        
-        /* Estilos de inputs para edición */
-        .management-table input[type="text"], .management-table input[type="email"], .management-table select {
-            width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
-        }
-        
-        /* Botones de acción */
-        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: opacity 0.3s; }
-        .btn-edit { background-color: #ffc107; color: #333; }
-        .btn-delete { background-color: #dc3545; color: white; margin-left: 5px; }
-        .btn-save { background-color: #28a745; color: white; }
-        .btn-cancel { background-color: #6c757d; color: white; }
-        
-        .message { padding: 15px; border-radius: 5px; margin-bottom: 20px; font-weight: 600; }
-        .message.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .message.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    </style>
+    <link rel="stylesheet" href="..\..\Lib\Estilos\estilos.css">
+    
 </head>
 <body>
     <div class="container">
